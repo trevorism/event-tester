@@ -1,0 +1,8 @@
+runtime: java17
+service: event-tester
+entrypoint: java -jar event-tester-all.jar
+handlers:
+  - url: /.*
+    secure: always
+    redirect_http_response_code: 301
+    script: auto
