@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 @OpenAPIDefinition(
         info = @Info(
-                title = "App",
+                title = "Event Tester",
                 version = "0.1.0",
                 description = "API",
                 contact = @Contact(url = "https://trevorism.com", name = "Trevor Brooks", email = "tbrooks@trevorism.com")
