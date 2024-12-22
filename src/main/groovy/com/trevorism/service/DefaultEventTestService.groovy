@@ -112,11 +112,11 @@ class DefaultEventTestService implements EventTestService{
         map.put("id", "heartbeat")
         map.put("timestamp", Instant.now().toString())
         try {
-            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/heartbeat")
+            appClientSecureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/heartbeat")
         } catch (Exception e) {
             log.warn("Failed to delete heartbeat", e)
         }
-        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+        appClientSecureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
     @Override
@@ -124,11 +124,11 @@ class DefaultEventTestService implements EventTestService{
         map.put("id", "event")
         map.put("timestamp", Instant.now().toString())
         try{
-            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
+            appClientSecureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
         } catch (Exception e) {
             log.warn("Failed to delete event", e)
         }
-        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+        appClientSecureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
     private static String createGithubUrl(String projectName) {
