@@ -34,6 +34,7 @@ class DefaultEventTestService implements EventTestService{
     private ChannelClient channelClient
     private Repository<TestSuite> testSuiteRepository
     private ScheduleService scheduleService
+    private AppClientSecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
 
     DefaultEventTestService(SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient
@@ -50,7 +51,7 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     void invokeGithubWorkflow(TestSuite testSuite) {
-        secureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
+        appClientSecureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
     }
 
     @Override
@@ -85,7 +86,7 @@ class DefaultEventTestService implements EventTestService{
     boolean ensureGithubInvocationSuccess(TestSuite testSuite) {
         String baseUrl = createGithubUrl(testSuite.source)
         baseUrl += "/test.yml"
-        String response = new AppClientSecureHttpClient().get(baseUrl)
+        String response = appClientSecureHttpClient.get(baseUrl)
         WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
         log.info("Workflow status: ${status}")
         return status != null && status.state == "success"

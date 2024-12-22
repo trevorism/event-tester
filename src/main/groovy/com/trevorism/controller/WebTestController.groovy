@@ -1,6 +1,5 @@
 package com.trevorism.controller
 
-import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestResult
 import com.trevorism.model.TestSuite
 import com.trevorism.secure.Roles
