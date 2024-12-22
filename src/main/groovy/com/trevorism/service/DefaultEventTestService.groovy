@@ -34,7 +34,7 @@ class DefaultEventTestService implements EventTestService{
     private ChannelClient channelClient
     private Repository<TestSuite> testSuiteRepository
     private ScheduleService scheduleService
-    private AppClientSecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
+    private SecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
 
     DefaultEventTestService(SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient

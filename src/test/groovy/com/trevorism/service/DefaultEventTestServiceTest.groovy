@@ -47,12 +47,14 @@ class DefaultEventTestServiceTest {
     @Test
     void testStoreHeartbeat() {
         DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
+        defaultEventTestService.appClientSecureHttpClient = [post: { x,y -> "yes" }] as SecureHttpClient
         defaultEventTestService.storeHeartbeat(["beat": true])
     }
 
     @Test
     void testStoreEvent() {
         DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
+        defaultEventTestService.appClientSecureHttpClient = [post: { x,y -> "yes" }] as SecureHttpClient
         defaultEventTestService.storeEvent(["event": true])
     }
 }
