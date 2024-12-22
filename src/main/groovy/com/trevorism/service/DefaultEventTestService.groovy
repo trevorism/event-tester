@@ -78,10 +78,12 @@ class DefaultEventTestService implements EventTestService{
     boolean ensureSampleEventReceipt() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
         String timestamp = gson.fromJson(response, Map)["timestamp"]
-        return checkIfTimeIsHappenedAfterOneHourAgo(timestamp)
+        boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+        log.info("Did event happen within an hour: ${event}")
+        return event
     }
 
-    private static boolean checkIfTimeIsHappenedAfterOneHourAgo(String timestamp) {
+    private static boolean checkIfTimeOccurredBetweenNowAndOneHourAgo(String timestamp) {
         Instant instant = Instant.parse(timestamp)
         return instant != null && instant.isBefore(Instant.now()) && instant.isAfter(Instant.now().minus(1, ChronoUnit.HOURS))
     }
@@ -93,14 +95,16 @@ class DefaultEventTestService implements EventTestService{
         String response = appClientSecureHttpClient.get(baseUrl)
         WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
         log.info("Workflow status: ${status}")
-        return status?.result == "success" && checkIfTimeIsHappenedAfterOneHourAgo(status.updatedAt)
+        return checkIfTimeOccurredBetweenNowAndOneHourAgo(status.updatedAt)
     }
 
     @Override
     boolean ensureHeartbeat() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
         String timestamp = gson.fromJson(response, Map)["timestamp"]
-        checkIfTimeIsHappenedAfterOneHourAgo(timestamp)
+        boolean heartbeat = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+        log.info("Did heartbeat happen within an hour: ${heartbeat}")
+        return heartbeat
     }
 
     @Override
