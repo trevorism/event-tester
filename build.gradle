@@ -93,7 +93,7 @@ appengine {
     stage.artifact = layout.buildDirectory.file("libs/${project.name}-all.jar")
     deploy {
         projectId = "trevorism-testing"
-        version = "0-1-0"
+        version = "0-2-0"
     }
 }
 
@@ -105,7 +105,7 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                minimum = 0.0
+                minimum = 0.4
             }
         }
     }

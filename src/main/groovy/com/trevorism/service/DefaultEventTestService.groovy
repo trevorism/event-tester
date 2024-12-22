@@ -45,12 +45,12 @@ class DefaultEventTestService implements EventTestService{
     }
 
     @Override
-    void sendSampleEvent(TestSuite testSuite) {
+    String sendSampleEvent(TestSuite testSuite) {
         eventClient.sendEvent("event-tester", testSuite)
     }
 
     @Override
-    void invokeGithubWorkflow(TestSuite testSuite) {
+    String invokeGithubWorkflow(TestSuite testSuite) {
         appClientSecureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
     }
 
@@ -62,12 +62,12 @@ class DefaultEventTestService implements EventTestService{
     }
 
     @Override
-    boolean ensureMinimumEventTopicAndSubscriptionData(TestSuite testSuite) {
+    boolean ensureMinimumEventTopicAndSubscriptionData() {
         return checkForTopics() && checkForSubscriptions()
     }
 
     @Override
-    boolean ensureScheduleData(TestSuite testSuite) {
+    boolean ensureScheduleData() {
         ScheduledTask task = scheduleService.get("6317601198178304")
         boolean taskExists = task != null
         log.info("Does scheduled task exist?: ${taskExists}")
@@ -75,11 +75,15 @@ class DefaultEventTestService implements EventTestService{
     }
 
     @Override
-    boolean ensureSampleEventReceipt(TestSuite testSuite) {
+    boolean ensureSampleEventReceipt() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
-        Date date = response["timestamp"]
-        log.info("Sample event timestamp: ${date}")
-        return date != null && date.before(new Date()) && date.after(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
+        String timestamp = gson.fromJson(response, Map)["timestamp"]
+        return checkIfTimeIsHappenedAfterOneHourAgo(timestamp)
+    }
+
+    private static boolean checkIfTimeIsHappenedAfterOneHourAgo(String timestamp) {
+        Instant instant = Instant.parse(timestamp)
+        return instant != null && instant.isBefore(Instant.now()) && instant.isAfter(Instant.now().minus(1, ChronoUnit.HOURS))
     }
 
     @Override
@@ -89,28 +93,37 @@ class DefaultEventTestService implements EventTestService{
         String response = appClientSecureHttpClient.get(baseUrl)
         WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
         log.info("Workflow status: ${status}")
-        return status != null && status.state == "success"
+        return status?.result == "success" && checkIfTimeIsHappenedAfterOneHourAgo(status.updatedAt)
     }
 
     @Override
     boolean ensureHeartbeat() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
-        Date date = response["heartbeat"]
-        log.info("Heartbeat: ${date}")
-        return date != null && date.before(new Date()) && date.after(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
+        String timestamp = gson.fromJson(response, Map)["timestamp"]
+        checkIfTimeIsHappenedAfterOneHourAgo(timestamp)
     }
 
     @Override
     void storeHeartbeat(Map map) {
         map.put("id", "heartbeat")
-        map.put("timestamp", new Date())
+        map.put("timestamp", Instant.now().toString())
+        try {
+            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/heartbeat")
+        } catch (Exception e) {
+            log.warn("Failed to delete heartbeat", e)
+        }
         secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
     @Override
     void storeEvent(Map map) {
         map.put("id", "event")
-        map.put("timestamp", new Date())
+        map.put("timestamp", Instant.now().toString())
+        try{
+            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
+        } catch (Exception e) {
+            log.warn("Failed to delete event", e)
+        }
         secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
@@ -122,8 +135,8 @@ class DefaultEventTestService implements EventTestService{
         def subs = ["store-test-result","update-test-suite","store-deploy","event-test-sub"]
         def found = [false,false,false,false]
         channelClient.listSubscriptions().each { sub ->
-            0..3.each { i ->
-                if(sub.topic == subs[i]){
+            for(int i = 0; i < 4; i++) {
+                if (sub.name == subs[i]) {
                     found[i] = true
                 }
             }
@@ -137,8 +150,8 @@ class DefaultEventTestService implements EventTestService{
         def topics = ["testResult","deploy","event-tester", "dead-letter-topic"]
         def found = [false,false,false,false]
         channelClient.listTopics().each { topic ->
-            0..3.each { i ->
-                if(topic == topics[i]){
+            for(int i = 0; i < 4; i++) {
+                if (topic == topics[i]) {
                     found[i] = true
                 }
             }

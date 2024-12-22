@@ -4,13 +4,13 @@ import com.trevorism.model.TestSuite
 
 interface EventTestService {
 
-    void sendSampleEvent(TestSuite testSuite)
-    void invokeGithubWorkflow(TestSuite testSuite)
+    String sendSampleEvent(TestSuite testSuite)
+    String invokeGithubWorkflow(TestSuite testSuite)
 
     boolean ensureTestSuiteDataExists(TestSuite testSuite)
-    boolean ensureMinimumEventTopicAndSubscriptionData(TestSuite testSuite)
-    boolean ensureScheduleData(TestSuite testSuite)
-    boolean ensureSampleEventReceipt(TestSuite testSuite)
+    boolean ensureMinimumEventTopicAndSubscriptionData()
+    boolean ensureScheduleData()
+    boolean ensureSampleEventReceipt()
     boolean ensureGithubInvocationSuccess(TestSuite testSuite)
 
     boolean ensureHeartbeat()

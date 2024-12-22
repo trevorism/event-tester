@@ -35,11 +35,11 @@ class WebTestController {
             eventTestService.invokeGithubWorkflow(testSuite)
 
             allTestResults << eventTestService.ensureTestSuiteDataExists(testSuite)
-            allTestResults << eventTestService.ensureMinimumEventTopicAndSubscriptionData(testSuite)
-            allTestResults << eventTestService.ensureScheduleData(testSuite)
-            allTestResults << eventTestService.ensureSampleEventReceipt(testSuite)
-            allTestResults << eventTestService.ensureGithubInvocationSuccess(testSuite)
+            allTestResults << eventTestService.ensureMinimumEventTopicAndSubscriptionData()
+            allTestResults << eventTestService.ensureScheduleData()
             allTestResults << eventTestService.ensureHeartbeat()
+            allTestResults << eventTestService.ensureSampleEventReceipt()
+            allTestResults << eventTestService.ensureGithubInvocationSuccess(testSuite)
 
             boolean didAllTestsPass = allTestResults.every { it }
             return createTestResult(testSuite, didAllTestsPass, allTestResults.size(), startTime)
