@@ -64,6 +64,7 @@ dependencies {
     implementation 'com.trevorism:datastore-client:4.0.0'
     implementation 'com.trevorism:event-client:0.1.1'
     implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'com.trevorism:schedule-client:1.0.0'
 
     testImplementation 'com.trevorism:test-result-events:0.3.0'
     acceptanceImplementation 'io.cucumber:cucumber-groovy:6.10.4'

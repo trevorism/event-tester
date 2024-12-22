@@ -8,12 +8,20 @@ import com.trevorism.event.ChannelClient
 import com.trevorism.event.DefaultChannelClient
 import com.trevorism.event.DefaultEventClient
 import com.trevorism.event.EventClient
+import com.trevorism.https.AppClientSecureHttpClient
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestSuite
 import com.trevorism.model.WorkflowRequest
+import com.trevorism.model.WorkflowStatus
+import com.trevorism.schedule.DefaultScheduleService
+import com.trevorism.schedule.ScheduleService
+import com.trevorism.schedule.model.ScheduledTask
 import io.micronaut.runtime.http.scope.RequestScope
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @RequestScope
 class DefaultEventTestService implements EventTestService{
@@ -25,12 +33,14 @@ class DefaultEventTestService implements EventTestService{
     private EventClient<TestSuite> eventClient
     private ChannelClient channelClient
     private Repository<TestSuite> testSuiteRepository
+    private ScheduleService scheduleService
 
     DefaultEventTestService(SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient
         this.eventClient = new DefaultEventClient(secureHttpClient)
         this.channelClient = new DefaultChannelClient(secureHttpClient)
         this.testSuiteRepository = new FastDatastoreRepository<>(TestSuite, secureHttpClient)
+        this.scheduleService = new DefaultScheduleService(secureHttpClient)
     }
 
     @Override
@@ -40,7 +50,7 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     void invokeGithubWorkflow(TestSuite testSuite) {
-        secureHttpClient.post(createUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
+        secureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
     }
 
     @Override
@@ -57,25 +67,53 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     boolean ensureScheduleData(TestSuite testSuite) {
-        return false
+        ScheduledTask task = scheduleService.get("6317601198178304")
+        boolean taskExists = task != null
+        log.info("Does scheduled task exist?: ${taskExists}")
+        return taskExists
     }
 
     @Override
     boolean ensureSampleEventReceipt(TestSuite testSuite) {
-        return false
+        String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
+        Date date = response["timestamp"]
+        log.info("Sample event timestamp: ${date}")
+        return date != null && date.before(new Date()) && date.after(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
     }
 
     @Override
     boolean ensureGithubInvocationSuccess(TestSuite testSuite) {
-        return false
+        String baseUrl = createGithubUrl(testSuite.source)
+        baseUrl += "/test.yml"
+        String response = new AppClientSecureHttpClient().get(baseUrl)
+        WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
+        log.info("Workflow status: ${status}")
+        return status != null && status.state == "success"
     }
 
     @Override
-    boolean validateDailyRun() {
-        return false
+    boolean ensureHeartbeat() {
+        String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
+        Date date = response["heartbeat"]
+        log.info("Heartbeat: ${date}")
+        return date != null && date.before(new Date()) && date.after(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
     }
 
-    private static String createUrl(String projectName) {
+    @Override
+    void storeHeartbeat(Map map) {
+        map.put("id", "heartbeat")
+        map.put("timestamp", new Date())
+        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+    }
+
+    @Override
+    void storeEvent(Map map) {
+        map.put("id", "event")
+        map.put("timestamp", new Date())
+        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+    }
+
+    private static String createGithubUrl(String projectName) {
         return "https://github.project.trevorism.com/repo/${projectName}/workflow"
     }
 

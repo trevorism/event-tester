@@ -40,6 +40,7 @@ class WebTestController {
             allTestResults << eventTestService.ensureScheduleData(testSuite)
             allTestResults << eventTestService.ensureSampleEventReceipt(testSuite)
             allTestResults << eventTestService.ensureGithubInvocationSuccess(testSuite)
+            allTestResults << eventTestService.ensureHeartbeat()
 
             boolean didAllTestsPass = allTestResults.every { it }
             return createTestResult(testSuite, didAllTestsPass, allTestResults.size(), startTime)
@@ -65,15 +66,15 @@ class WebTestController {
     @Operation(summary = "Called by Cloud Scheduler, ensures daily runs of this test")
     @Post(value = "/heartbeat", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     boolean heartbeat(@Body Map body) {
-
-        eventTestService.validateDailyRun()
+        eventTestService.storeHeartbeat(body)
     }
 
     @Tag(name = "Test Endpoint Operations")
     @Operation(summary = "Webhook for a sample event **Secure")
     @Post(value = "/webhook", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     boolean webhook(@Body Map body) {
-        log.info("Heartbeat received: ${body}")
+        log.info("Test event received: ${body}")
+        eventTestService.storeEvent(body)
         true
     }
 }

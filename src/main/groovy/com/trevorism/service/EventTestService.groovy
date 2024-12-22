@@ -13,5 +13,8 @@ interface EventTestService {
     boolean ensureSampleEventReceipt(TestSuite testSuite)
     boolean ensureGithubInvocationSuccess(TestSuite testSuite)
 
-    boolean validateDailyRun()
+    boolean ensureHeartbeat()
+
+    void storeHeartbeat(Map map)
+    void storeEvent(Map map)
 }
