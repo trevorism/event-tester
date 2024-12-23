@@ -41,7 +41,6 @@ class DefaultEventTestService implements EventTestService{
     private ScheduleService scheduleService
     private SecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
 
-
     DefaultEventTestService(SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient
         this.eventClient = new DefaultEventClient(secureHttpClient)
