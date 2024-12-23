@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory
 class WebTestController {
 
     private static final Logger log = LoggerFactory.getLogger(WebTestController.class.name)
+
     @Inject
     EventTestService eventTestService
 
@@ -66,6 +67,7 @@ class WebTestController {
     @Post(value = "/heartbeat", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     boolean heartbeat(@Body Map body) {
         eventTestService.storeHeartbeat(body)
+        return eventTestService.ensureDailyTestRunAndSendError()
     }
 
     @Tag(name = "Test Endpoint Operations")

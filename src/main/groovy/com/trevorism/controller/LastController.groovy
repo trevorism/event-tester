@@ -8,10 +8,8 @@ import com.trevorism.secure.Permissions
 import com.trevorism.secure.Roles
 import com.trevorism.secure.Secure
 import io.micronaut.http.MediaType
-import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Post
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 
@@ -31,11 +29,20 @@ class LastController {
     }
 
     @Tag(name = "Last Operations")
-    @Operation(summary = "Webhook for a sample event **Secure")
+    @Operation(summary = "Get the last test event **Secure")
     @Get(value = "/event", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     @Secure(value = Roles.USER, allowInternal = true, permissions = Permissions.READ)
     Map event() {
         String json = appClientSecureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
+        gson.fromJson(json, Map)
+    }
+
+    @Tag(name = "Last Operations")
+    @Operation(summary = "Get the last daily test run **Secure")
+    @Get(value = "/dailyRun", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
+    @Secure(value = Roles.USER, allowInternal = true, permissions = Permissions.READ)
+    Map testRun() {
+        String json = appClientSecureHttpClient.get("https://datastore.data.trevorism.com/object/testsuite/5071251278135296")
         gson.fromJson(json, Map)
     }
 }

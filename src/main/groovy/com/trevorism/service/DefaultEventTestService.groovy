@@ -2,6 +2,7 @@ package com.trevorism.service
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.trevorism.TestErrorClient
 import com.trevorism.data.FastDatastoreRepository
 import com.trevorism.data.Repository
 import com.trevorism.event.ChannelClient
@@ -10,6 +11,7 @@ import com.trevorism.event.DefaultEventClient
 import com.trevorism.event.EventClient
 import com.trevorism.https.AppClientSecureHttpClient
 import com.trevorism.https.SecureHttpClient
+import com.trevorism.model.TestError
 import com.trevorism.model.TestSuite
 import com.trevorism.model.WorkflowRequest
 import com.trevorism.model.WorkflowStatus
@@ -22,6 +24,9 @@ import org.slf4j.LoggerFactory
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @RequestScope
 class DefaultEventTestService implements EventTestService{
@@ -35,6 +40,7 @@ class DefaultEventTestService implements EventTestService{
     private Repository<TestSuite> testSuiteRepository
     private ScheduleService scheduleService
     private SecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
+
 
     DefaultEventTestService(SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient
@@ -69,18 +75,31 @@ class DefaultEventTestService implements EventTestService{
     @Override
     boolean ensureScheduleData() {
         ScheduledTask task = scheduleService.get("6317601198178304")
-        boolean taskExists = task != null
-        log.info("Does scheduled task exist?: ${taskExists}")
+        ScheduledTask task2 = scheduleService.get("5721406113316864")
+        boolean taskExists = task != null && task2 != null
+        log.info("Does scheduled task for daily error check and monitoring this app exist?: ${taskExists}")
         return taskExists
     }
 
     @Override
     boolean ensureSampleEventReceipt() {
-        String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
-        String timestamp = gson.fromJson(response, Map)["timestamp"]
-        boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
-        log.info("Did event happen within an hour: ${event}")
-        return event
+        def executor = Executors.newSingleThreadScheduledExecutor()
+        def future = executor.schedule({
+            String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
+            String timestamp = gson.fromJson(response, Map)["timestamp"]
+            boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+            log.info("Did event happen within an hour: ${event}")
+            return event
+        } as Callable<Boolean>, 10, TimeUnit.SECONDS)
+
+        try {
+            return future.get()
+        } catch (Exception e) {
+            log.warn("Error during delay", e)
+            return false
+        } finally {
+            executor.shutdown()
+        }
     }
 
     private static boolean checkIfTimeOccurredBetweenNowAndOneHourAgo(String timestamp) {
@@ -105,6 +124,22 @@ class DefaultEventTestService implements EventTestService{
         boolean heartbeat = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
         log.info("Did heartbeat happen within an hour: ${heartbeat}")
         return heartbeat
+    }
+
+    @Override
+    boolean ensureDailyTestRunAndSendError() {
+        TestSuite testSuite = testSuiteRepository.get("5071251278135296")
+        log.info("Test suite last run date: ${testSuite.lastRunDate}")
+        Instant instant = testSuite.lastRunDate.toInstant()
+        boolean result = instant?.isAfter(Instant.now().minus(1, ChronoUnit.DAYS))
+
+        if(!result){
+            TestErrorClient testErrorClient = new TestErrorClient(appClientSecureHttpClient)
+            testErrorClient.addTestError(
+                    new TestError(source: "event-tester", message: "Test suite did not run today", details: ["lastRun": instant.toString()]))
+        }
+
+        return result
     }
 
     @Override

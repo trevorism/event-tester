@@ -1,5 +1,6 @@
 package com.trevorism.service
 
+import com.trevorism.https.AppClientSecureHttpClient
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestSuite
 import org.junit.jupiter.api.Test
@@ -57,4 +58,5 @@ class DefaultEventTestServiceTest {
         defaultEventTestService.appClientSecureHttpClient = [post: { x,y -> "yes" }] as SecureHttpClient
         defaultEventTestService.storeEvent(["event": true])
     }
+
 }
