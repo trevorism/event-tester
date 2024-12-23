@@ -82,23 +82,12 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     boolean ensureSampleEventReceipt() {
-        def executor = Executors.newSingleThreadScheduledExecutor()
-        def future = executor.schedule({
-            String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
-            String timestamp = gson.fromJson(response, Map)["timestamp"]
-            boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
-            log.info("Did event happen within an hour: ${event}")
-            return event
-        } as Callable<Boolean>, 10, TimeUnit.SECONDS)
-
-        try {
-            return future.get()
-        } catch (Exception e) {
-            log.warn("Error during delay", e)
-            return false
-        } finally {
-            executor.shutdown()
-        }
+        Thread.sleep(10 * 1000) //Sleep for 10 seconds to allow event to be processed
+        String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
+        String timestamp = gson.fromJson(response, Map)["timestamp"]
+        boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+        log.info("Did event happen within an hour: ${event}")
+        return event
     }
 
     private static boolean checkIfTimeOccurredBetweenNowAndOneHourAgo(String timestamp) {
