@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 @OpenAPIDefinition(
         info = @Info(
                 title = "Event Tester",
-                version = "0.3.0",
+                version = "0.4.0",
                 description = "Endpoints are hit periodically to test Trevorism Events, essential data, and heartbeats are working",
                 contact = @Contact(url = "https://trevorism.com", name = "Trevor Brooks", email = "tbrooks@trevorism.com")
         )
@@ -21,7 +21,7 @@ class Application {
     private static final Logger log = LoggerFactory.getLogger(Application)
 
     static void main(String[] args) {
-        log.info("Started application")
+        log.info("Started event tester application")
         Micronaut.run(Application, args)
     }
 }

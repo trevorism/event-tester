@@ -12,11 +12,15 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.inject.Inject
+import jakarta.inject.Named
 
 @Controller("/last")
 class LastController {
 
-    private SecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
+    @Inject
+    @Named("eventTesterSecureHttpClient")
+    private SecureHttpClient appClientSecureHttpClient
     private Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").create()
 
     @Tag(name = "Last Operations")
@@ -24,7 +28,7 @@ class LastController {
     @Get(value = "/heartbeat", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     @Secure(value = Roles.USER, allowInternal = true, permissions = Permissions.READ)
     Map heartbeat() {
-        String json = appClientSecureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
+        String json =  appClientSecureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
         gson.fromJson(json, Map)
     }
 

@@ -1,3 +1,7 @@
+# 0.4.0
+
+Fix test to work with security.
+
 # 0.3.0
 
 Close loop test. A cloud scheduler calls a heartbeat method which verifies a daily run of the event-tester.

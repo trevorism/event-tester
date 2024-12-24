@@ -9,7 +9,6 @@ import com.trevorism.event.ChannelClient
 import com.trevorism.event.DefaultChannelClient
 import com.trevorism.event.DefaultEventClient
 import com.trevorism.event.EventClient
-import com.trevorism.https.AppClientSecureHttpClient
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestError
 import com.trevorism.model.TestSuite
@@ -18,17 +17,14 @@ import com.trevorism.model.WorkflowStatus
 import com.trevorism.schedule.DefaultScheduleService
 import com.trevorism.schedule.ScheduleService
 import com.trevorism.schedule.model.ScheduledTask
-import io.micronaut.runtime.http.scope.RequestScope
+import jakarta.inject.Named
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
-@RequestScope
+@jakarta.inject.Singleton
 class DefaultEventTestService implements EventTestService{
 
     private static final Logger log = LoggerFactory.getLogger(DefaultEventTestService.class.name)
@@ -39,9 +35,8 @@ class DefaultEventTestService implements EventTestService{
     private ChannelClient channelClient
     private Repository<TestSuite> testSuiteRepository
     private ScheduleService scheduleService
-    private SecureHttpClient appClientSecureHttpClient = new AppClientSecureHttpClient()
 
-    DefaultEventTestService(SecureHttpClient secureHttpClient){
+    DefaultEventTestService(@Named("eventTesterSecureHttpClient") SecureHttpClient secureHttpClient){
         this.secureHttpClient = secureHttpClient
         this.eventClient = new DefaultEventClient(secureHttpClient)
         this.channelClient = new DefaultChannelClient(secureHttpClient)
@@ -56,7 +51,7 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     String invokeGithubWorkflow(TestSuite testSuite) {
-        appClientSecureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
+        secureHttpClient.post(createGithubUrl(testSuite.source), gson.toJson(new WorkflowRequest(workflowInputs: ["TEST_TYPE": "cucumber"])))
     }
 
     @Override
@@ -99,7 +94,7 @@ class DefaultEventTestService implements EventTestService{
     boolean ensureGithubInvocationSuccess(TestSuite testSuite) {
         String baseUrl = createGithubUrl(testSuite.source)
         baseUrl += "/test.yml"
-        String response = appClientSecureHttpClient.get(baseUrl)
+        String response = secureHttpClient.get(baseUrl)
         WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
         log.info("Workflow status: ${status}")
         return checkIfTimeOccurredBetweenNowAndOneHourAgo(status.updatedAt)
@@ -122,7 +117,7 @@ class DefaultEventTestService implements EventTestService{
         boolean result = instant?.isAfter(Instant.now().minus(1, ChronoUnit.DAYS))
 
         if(!result){
-            TestErrorClient testErrorClient = new TestErrorClient(appClientSecureHttpClient)
+            TestErrorClient testErrorClient = new TestErrorClient(secureHttpClient)
             testErrorClient.addTestError(
                     new TestError(source: "event-tester", message: "Test suite did not run today", details: ["lastRun": instant.toString()]))
         }
@@ -135,11 +130,11 @@ class DefaultEventTestService implements EventTestService{
         map.put("id", "heartbeat")
         map.put("timestamp", Instant.now().toString())
         try {
-            appClientSecureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/heartbeat")
+            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/heartbeat")
         } catch (Exception e) {
             log.warn("Failed to delete heartbeat", e)
         }
-        appClientSecureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
     @Override
@@ -147,11 +142,11 @@ class DefaultEventTestService implements EventTestService{
         map.put("id", "event")
         map.put("timestamp", Instant.now().toString())
         try{
-            appClientSecureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
+            secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
         } catch (Exception e) {
             log.warn("Failed to delete event", e)
         }
-        appClientSecureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
+        secureHttpClient.post("https://memory.data.trevorism.com/object/test-event", gson.toJson(map))
     }
 
     private static String createGithubUrl(String projectName) {
