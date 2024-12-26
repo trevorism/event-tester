@@ -1,8 +1,10 @@
 package com.trevorism.service
 
-import com.trevorism.https.AppClientSecureHttpClient
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestSuite
+import com.trevorism.model.WorkflowStatus
 import org.junit.jupiter.api.Test
 
 import java.time.Instant
@@ -47,16 +49,27 @@ class DefaultEventTestServiceTest {
 
     @Test
     void testStoreHeartbeat() {
-        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
-        defaultEventTestService.appClientSecureHttpClient = [post: { x,y -> "yes" }] as SecureHttpClient
+        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }, delete: { x -> "{}"}] as SecureHttpClient)
         defaultEventTestService.storeHeartbeat(["beat": true])
     }
 
     @Test
     void testStoreEvent() {
-        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
-        defaultEventTestService.appClientSecureHttpClient = [post: { x,y -> "yes" }] as SecureHttpClient
+        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }, delete: { x -> "{}"}] as SecureHttpClient)
         defaultEventTestService.storeEvent(["event": true])
+    }
+
+    @Test
+    void testEnsureGithubInvocationSuccess(){
+        Gson gson = new Gson()
+        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([get: { x -> gson.toJson(new WorkflowStatus(updatedAt: Instant.now())) }] as SecureHttpClient)
+        assert defaultEventTestService.ensureGithubInvocationSuccess(new TestSuite([source: "event-tester", kind: "web"]))
+    }
+
+    @Test
+    void testInvokeGithubWorkflow(){
+        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
+        assert defaultEventTestService.invokeGithubWorkflow(new TestSuite([source: "event-tester", kind: "web"]))
     }
 
 }
