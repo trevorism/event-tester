@@ -1,7 +1,6 @@
 package com.trevorism.service
 
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.TestSuite
 import com.trevorism.model.WorkflowStatus
@@ -14,7 +13,7 @@ class DefaultEventTestServiceTest {
     @Test
     void testSendSampleEvent() {
         DefaultEventTestService defaultEventTestService = new DefaultEventTestService([post: { x,y -> "yes" }] as SecureHttpClient)
-        assert defaultEventTestService.sendSampleEvent(new TestSuite([source: "event-tester", kind: "web"]))
+        assert defaultEventTestService.sendSampleEvent([:])
     }
 
     @Test
@@ -43,7 +42,7 @@ class DefaultEventTestServiceTest {
 
     @Test
     void testEnsureHeartbeat() {
-        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([get: { x -> "{\"timestamp\":\"${Instant.now().toString()}\"}".toString() }] as SecureHttpClient)
+        DefaultEventTestService defaultEventTestService = new DefaultEventTestService([get: { x -> "{\"timestamp\":\"${Instant.now().minusMillis(1000).toString()}\"}".toString() }] as SecureHttpClient)
         assert defaultEventTestService.ensureHeartbeat()
     }
 

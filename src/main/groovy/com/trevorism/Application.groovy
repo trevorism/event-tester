@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 @OpenAPIDefinition(
         info = @Info(
                 title = "Event Tester",
-                version = "0.4.0",
+                version = "0.5.0",
                 description = "Endpoints are hit periodically to test Trevorism Events, essential data, and heartbeats are working",
                 contact = @Contact(url = "https://trevorism.com", name = "Trevor Brooks", email = "tbrooks@trevorism.com")
         )

@@ -1,3 +1,7 @@
+# 0.5.0
+
+Remove Thread.sleep(), it pauses event processing.
+
 # 0.4.0
 
 Fix test to work with security.

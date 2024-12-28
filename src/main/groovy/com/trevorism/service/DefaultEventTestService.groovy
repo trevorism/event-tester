@@ -2,6 +2,7 @@ package com.trevorism.service
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.trevorism.AlertClient
 import com.trevorism.TestErrorClient
 import com.trevorism.data.FastDatastoreRepository
 import com.trevorism.data.Repository
@@ -10,10 +11,7 @@ import com.trevorism.event.DefaultChannelClient
 import com.trevorism.event.DefaultEventClient
 import com.trevorism.event.EventClient
 import com.trevorism.https.SecureHttpClient
-import com.trevorism.model.TestError
-import com.trevorism.model.TestSuite
-import com.trevorism.model.WorkflowRequest
-import com.trevorism.model.WorkflowStatus
+import com.trevorism.model.*
 import com.trevorism.schedule.DefaultScheduleService
 import com.trevorism.schedule.ScheduleService
 import com.trevorism.schedule.model.ScheduledTask
@@ -25,18 +23,18 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 @jakarta.inject.Singleton
-class DefaultEventTestService implements EventTestService{
+class DefaultEventTestService implements EventTestService {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultEventTestService.class.name)
 
     private Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").create()
     private SecureHttpClient secureHttpClient
-    private EventClient<TestSuite> eventClient
+    private EventClient<Map> eventClient
     private ChannelClient channelClient
     private Repository<TestSuite> testSuiteRepository
     private ScheduleService scheduleService
 
-    DefaultEventTestService(@Named("eventTesterSecureHttpClient") SecureHttpClient secureHttpClient){
+    DefaultEventTestService(@Named("eventTesterSecureHttpClient") SecureHttpClient secureHttpClient) {
         this.secureHttpClient = secureHttpClient
         this.eventClient = new DefaultEventClient(secureHttpClient)
         this.channelClient = new DefaultChannelClient(secureHttpClient)
@@ -45,8 +43,8 @@ class DefaultEventTestService implements EventTestService{
     }
 
     @Override
-    String sendSampleEvent(TestSuite testSuite) {
-        eventClient.sendEvent("event-tester", testSuite)
+    String sendSampleEvent(Map body) {
+        eventClient.sendEvent("event-tester", body)
     }
 
     @Override
@@ -77,7 +75,6 @@ class DefaultEventTestService implements EventTestService{
 
     @Override
     boolean ensureSampleEventReceipt() {
-        Thread.sleep(10 * 1000) //Sleep for 10 seconds to allow event to be processed
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
         String timestamp = gson.fromJson(response, Map)["timestamp"]
         boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
@@ -110,16 +107,15 @@ class DefaultEventTestService implements EventTestService{
     }
 
     @Override
-    boolean ensureDailyTestRunAndSendError() {
+    boolean ensureDailyTestRunAndAlert() {
         TestSuite testSuite = testSuiteRepository.get("5071251278135296")
         log.info("Test suite last run date: ${testSuite.lastRunDate}")
         Instant instant = testSuite.lastRunDate.toInstant()
         boolean result = instant?.isAfter(Instant.now().minus(1, ChronoUnit.DAYS))
 
-        if(!result){
-            TestErrorClient testErrorClient = new TestErrorClient(secureHttpClient)
-            testErrorClient.addTestError(
-                    new TestError(source: "event-tester", message: "Test suite did not run today", details: ["lastRun": instant.toString()]))
+        if (!result) {
+            sendAlert()
+            storeTestError(instant)
         }
 
         return result
@@ -141,7 +137,7 @@ class DefaultEventTestService implements EventTestService{
     void storeEvent(Map map) {
         map.put("id", "event")
         map.put("timestamp", Instant.now().toString())
-        try{
+        try {
             secureHttpClient.delete("https://memory.data.trevorism.com/object/test-event/event")
         } catch (Exception e) {
             log.warn("Failed to delete event", e)
@@ -154,10 +150,10 @@ class DefaultEventTestService implements EventTestService{
     }
 
     private boolean checkForSubscriptions() {
-        def subs = ["store-test-result","update-test-suite","store-deploy","event-test-sub"]
-        def found = [false,false,false,false]
+        def subs = ["store-test-result", "update-test-suite", "store-deploy", "event-test-sub"]
+        def found = [false, false, false, false]
         channelClient.listSubscriptions().each { sub ->
-            for(int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++) {
                 if (sub.name == subs[i]) {
                     found[i] = true
                 }
@@ -169,10 +165,10 @@ class DefaultEventTestService implements EventTestService{
     }
 
     private boolean checkForTopics() {
-        def topics = ["testResult","deploy","event-tester", "dead-letter-topic"]
-        def found = [false,false,false,false]
+        def topics = ["testResult", "deploy", "event-tester", "dead-letter-topic"]
+        def found = [false, false, false, false]
         channelClient.listTopics().each { topic ->
-            for(int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++) {
                 if (topic == topics[i]) {
                     found[i] = true
                 }
@@ -182,5 +178,24 @@ class DefaultEventTestService implements EventTestService{
         boolean everyTopicFound = found.every { it }
         log.info("Does every topic exist?: ${everyTopicFound}")
         return everyTopicFound
+    }
+
+    private void sendAlert() {
+        try {
+            AlertClient alertClient = new AlertClient(secureHttpClient)
+            alertClient.sendAlert(new Alert(subject: "Event Tester Error", body: "The event-tester web test suite did not run today"))
+        } catch (Exception e) {
+            log.warn("Failed to send alert", e)
+        }
+    }
+
+    private void storeTestError(Instant instant) {
+        try {
+            TestErrorClient testErrorClient = new TestErrorClient(secureHttpClient)
+            testErrorClient.addTestError(
+                    new TestError(source: "event-tester", message: "Test suite did not run today", details: ["lastRun": instant.toString()]))
+        } catch (Exception e) {
+            log.warn("Failed to store test error", e)
+        }
     }
 }

@@ -15,6 +15,8 @@ import jakarta.inject.Inject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.time.Instant
+
 @Controller("/test")
 class WebTestController {
 
@@ -32,9 +34,7 @@ class WebTestController {
         long startTime = System.currentTimeMillis()
         def allTestResults = []
         try {
-            eventTestService.sendSampleEvent(testSuite)
             eventTestService.invokeGithubWorkflow(testSuite)
-
             allTestResults << eventTestService.ensureTestSuiteDataExists(testSuite)
             allTestResults << eventTestService.ensureMinimumEventTopicAndSubscriptionData()
             allTestResults << eventTestService.ensureScheduleData()
@@ -67,7 +67,8 @@ class WebTestController {
     @Post(value = "/heartbeat", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     boolean heartbeat(@Body Map body) {
         eventTestService.storeHeartbeat(body)
-        return eventTestService.ensureDailyTestRunAndSendError()
+        eventTestService.sendSampleEvent([content: "event-tester event"])
+        return eventTestService.ensureDailyTestRunAndAlert()
     }
 
     @Tag(name = "Test Endpoint Operations")
