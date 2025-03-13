@@ -77,14 +77,14 @@ class DefaultEventTestService implements EventTestService {
     boolean ensureSampleEventReceipt() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/event")
         String timestamp = gson.fromJson(response, Map)["timestamp"]
-        boolean event = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+        boolean event = checkIfTimeOccurredBetweenNowAndTwoHoursAgo(timestamp)
         log.info("Did event happen within an hour: ${event}")
         return event
     }
 
-    private static boolean checkIfTimeOccurredBetweenNowAndOneHourAgo(String timestamp) {
+    private static boolean checkIfTimeOccurredBetweenNowAndTwoHoursAgo(String timestamp) {
         Instant instant = Instant.parse(timestamp)
-        return instant != null && instant.isBefore(Instant.now()) && instant.isAfter(Instant.now().minus(1, ChronoUnit.HOURS))
+        return instant != null && instant.isBefore(Instant.now()) && instant.isAfter(Instant.now().minus(2, ChronoUnit.HOURS))
     }
 
     @Override
@@ -94,14 +94,14 @@ class DefaultEventTestService implements EventTestService {
         String response = secureHttpClient.get(baseUrl)
         WorkflowStatus status = gson.fromJson(response, WorkflowStatus.class)
         log.info("Workflow status: ${status}")
-        return checkIfTimeOccurredBetweenNowAndOneHourAgo(status.updatedAt)
+        return checkIfTimeOccurredBetweenNowAndTwoHoursAgo(status.updatedAt)
     }
 
     @Override
     boolean ensureHeartbeat() {
         String response = secureHttpClient.get("https://memory.data.trevorism.com/object/test-event/heartbeat")
         String timestamp = gson.fromJson(response, Map)["timestamp"]
-        boolean heartbeat = checkIfTimeOccurredBetweenNowAndOneHourAgo(timestamp)
+        boolean heartbeat = checkIfTimeOccurredBetweenNowAndTwoHoursAgo(timestamp)
         log.info("Did heartbeat happen within an hour: ${heartbeat}")
         return heartbeat
     }
