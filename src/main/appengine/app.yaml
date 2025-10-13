@@ -1,4 +1,4 @@
-runtime: java17
+runtime: java21
 service: event-tester
 entrypoint: java -jar event-tester-all.jar
 handlers:
