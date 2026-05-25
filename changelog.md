@@ -1,3 +1,7 @@
+# 0.7.0
+
+Upgrade to Micronaut 5.0.0, Java 25, Gradle wrapper latest, and updated dependencies (shadow 9.4.1, reactor-core 3.8.5, gson 2.14.0, appengine plugin 2.8.7).
+
 # 0.6.0
 
 Update dependencies.
