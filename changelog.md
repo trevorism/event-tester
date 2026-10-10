@@ -1,3 +1,7 @@
+## 0.8.1
+
+Update some gradle dependencies, fix gh actions workflow
+
 ## 0.8.0
 
 Update dependencies.
