@@ -70,7 +70,7 @@ class WebTestController {
     }
 
     @Tag(name = "Test Endpoint Operations")
-    @Operation(summary = "Webhook for a sample event **Secure")
+    @Operation(summary = "Webhook for a sample event")
     @Post(value = "/webhook", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     boolean webhook(@Body Map body) {
         log.info("Test event received: ${body}")
